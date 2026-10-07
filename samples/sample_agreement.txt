@@ -1,0 +1,85 @@
+NON-DISCLOSURE AGREEMENT
+
+This Non-Disclosure Agreement ("Agreement") is entered into as of January 1, 2025,
+by and between Acme Corp ("Disclosing Party") and John Doe ("Receiving Party").
+
+1. DEFINITION OF CONFIDENTIAL INFORMATION
+   "Confidential Information" means any data or information that is proprietary to
+   the Disclosing Party and not generally known to the public, whether in tangible
+   or intangible form, whenever and however disclosed, including, but not limited to:
+   (a) any marketing strategies, plans, financial information, or projections,
+   operations, sales estimates, business plans, and performance results relating to
+   the past, present, or future business activities of such party;
+   (b) plans for products or services, and customer or supplier lists;
+   (c) any scientific or technical information, invention, design, process, procedure,
+   formula, improvement, technology, or method;
+   (d) any concepts, reports, data, know-how, works-in-progress, designs, development
+   tools, specifications, computer software, source code, object code, flow charts,
+   databases, inventions, information, and trade secrets.
+
+2. OBLIGATIONS OF RECEIVING PARTY
+   The Receiving Party agrees to:
+   (a) hold the Confidential Information in strict confidence and not to disclose it
+   to any third parties without prior written consent of the Disclosing Party;
+   (b) use the Confidential Information solely for the purpose of evaluating a
+   potential business relationship between the parties ("Permitted Purpose");
+   (c) protect the Confidential Information using the same degree of care it uses
+   to protect its own confidential information, but in no event less than
+   reasonable care.
+
+3. TERM AND TERMINATION
+   This Agreement shall remain in effect for a period of FIVE (5) years from the
+   date of execution. Either party may terminate this Agreement upon thirty (30)
+   days' written notice. Upon termination, the Receiving Party shall immediately
+   destroy or return all Confidential Information.
+
+4. REMEDIES
+   The Receiving Party acknowledges that any breach of this Agreement may cause
+   irreparable harm to the Disclosing Party for which monetary damages would be
+   inadequate. Therefore, the Disclosing Party shall be entitled to seek equitable
+   relief, including injunction and specific performance, in addition to all other
+   remedies available at law or in equity, WITHOUT the necessity of proving actual
+   damages or posting bond.
+
+5. NON-COMPETE AND NON-SOLICITATION
+   During the term of this Agreement and for a period of TWO (2) years thereafter,
+   the Receiving Party shall not, directly or indirectly:
+   (a) engage in any business activity that competes with the Disclosing Party
+   within a radius of 500 miles;
+   (b) solicit or hire any employee of the Disclosing Party;
+   (c) solicit any client or customer of the Disclosing Party.
+
+6. UNILATERAL AMENDMENT
+   Acme Corp reserves the right to modify the terms of this Agreement at any time
+   at its sole discretion without prior notice to the Receiving Party. Continued
+   engagement with Acme Corp following such modification shall constitute acceptance
+   of the revised terms.
+
+7. LIMITATION OF LIABILITY
+   IN NO EVENT SHALL ACME CORP BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
+   EXEMPLARY, OR CONSEQUENTIAL DAMAGES, EVEN IF ADVISED OF THE POSSIBILITY OF
+   SUCH DAMAGES. THE TOTAL LIABILITY OF ACME CORP SHALL NOT EXCEED $100.
+
+8. GOVERNING LAW AND DISPUTE RESOLUTION
+   This Agreement shall be governed by the laws of the State of Delaware. Any
+   dispute arising out of or relating to this Agreement shall be resolved exclusively
+   by binding arbitration administered by the American Arbitration Association.
+   The Receiving Party WAIVES any right to a jury trial.
+
+9. ENTIRE AGREEMENT
+   This Agreement constitutes the entire agreement between the parties with respect
+   to its subject matter and supersedes all prior negotiations, understandings,
+   and agreements, whether written or oral.
+
+10. SEVERABILITY
+    If any provision of this Agreement is found to be unenforceable, the remaining
+    provisions will continue in full force and effect.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the date
+first written above.
+
+ACME CORP                               JOHN DOE
+By: ____________________________        By: ____________________________
+Name: Jane Smith                        Name: John Doe
+Title: Chief Executive Officer          Date: ____________________________
+Date: January 1, 2025

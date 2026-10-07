@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AI Legal Aid — Multi-Agent System</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Segoe UI",system-ui,sans-serif;font-size:14px;line-height:1.6;background:#f0f2f6;color:#1f2328;display:flex;min-height:100vh}
+
+/* Sidebar */
+#sidebar{width:230px;min-width:230px;background:#1e1e2e;color:#e2e8f0;padding:20px 16px;display:flex;flex-direction:column;gap:12px;position:sticky;top:0;height:100vh;overflow-y:auto}
+#sidebar .ibm-logo{background:#fff;border-radius:6px;padding:6px 12px;width:fit-content;font-weight:900;font-size:20px;color:#0530AD;letter-spacing:-1px}
+#sidebar h2{font-size:1.05rem;font-weight:700;color:#fff}
+#sidebar .sub{font-size:0.72rem;color:#94a3b8;font-weight:700;letter-spacing:.6px;text-transform:uppercase}
+#sidebar hr{border:none;border-top:1px solid #2d3a52;margin:2px 0}
+.sb-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;font-size:0.78rem;font-weight:600;background:#422006;color:#fbbf24}
+.agent-list{display:flex;flex-direction:column;gap:5px}
+.agent-item{font-size:0.82rem;color:#cbd5e1;padding:6px 10px;border-radius:5px;background:#2d2d42}
+#sidebar .sb-footer{font-size:0.7rem;color:#475569;margin-top:auto;text-align:center;line-height:1.9}
+
+/* Main */
+#main{flex:1;display:flex;flex-direction:column;min-height:100vh;overflow:hidden}
+.topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:14px 24px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.topbar h1{font-size:1.1rem;font-weight:700}
+.t-badge{padding:2px 8px;border-radius:4px;font-size:0.72rem;font-weight:700;color:#fff}
+
+/* Tabs */
+.tab-bar{background:#fff;border-bottom:2px solid #e5e7eb;padding:0 24px;display:flex;flex-shrink:0}
+.tab-btn{padding:12px 18px;cursor:pointer;border:none;background:none;font-size:0.88rem;font-weight:600;color:#57606a;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s}
+.tab-btn.active{color:#0530AD;border-bottom-color:#0530AD}
+.tab-btn:hover:not(.active){color:#1f2328}
+.tab-content{flex:1;overflow-y:auto;padding:24px}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* Layout */
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:20px;margin-bottom:16px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.metric{background:#f7f8fa;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;text-align:center}
+.metric .val{font-size:1.8rem;font-weight:800}
+.metric .lbl{font-size:0.75rem;color:#57606a;margin-top:2px}
+.hi .val{color:#d9534f}.me .val{color:#f0ad4e}.lo .val{color:#5cb85c}.in .val{color:#5bc0de}
+.vl .val{color:#d9534f}.wa .val{color:#f0ad4e}.no .val{color:#5bc0de}
+
+/* Badges */
+.rb{display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.72rem;font-weight:700;color:#fff;vertical-align:middle}
+.HIGH{background:#d9534f}.MEDIUM{background:#f0ad4e}.LOW{background:#5cb85c}.INFO{background:#5bc0de}
+.VIOLATION{background:#d9534f}.WARNING{background:#f0ad4e}.NOTE{background:#5bc0de}
+.STAT-NC{background:#d9534f;color:#fff;padding:3px 10px;border-radius:4px;font-weight:700}
+.STAT-W{background:#f0ad4e;color:#fff;padding:3px 10px;border-radius:4px;font-weight:700}
+.STAT-C{background:#5cb85c;color:#fff;padding:3px 10px;border-radius:4px;font-weight:700}
+
+/* Accordion */
+.acc{border:1px solid #e5e7eb;border-radius:6px;margin-bottom:8px;overflow:hidden}
+.acc-hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;background:#fafafa;font-weight:600;font-size:0.86rem;user-select:none;gap:8px}
+.acc-hdr:hover{background:#f0f2f6}
+.acc-hdr .lft{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.acc-body{display:none;padding:14px 16px;background:#fff;border-top:1px solid #e5e7eb;font-size:0.86rem;line-height:1.7}
+.acc-body.open{display:block}
+.excerpt{background:#f7f8fa;border-left:4px solid #ccc;padding:9px 14px;border-radius:4px;font-style:italic;margin-bottom:8px;font-size:0.84rem;color:#374151}
+
+/* Buttons */
+.btn{padding:9px 18px;border-radius:6px;border:none;cursor:pointer;font-size:0.88rem;font-weight:600;transition:opacity .15s}
+.btn:hover{opacity:.88}
+.btn-p{background:#0530AD;color:#fff}.btn-s{background:#f0f2f6;color:#1f2328;border:1px solid #d1d5db}
+.btn-g{background:#5cb85c;color:#fff}
+.btn-full{width:100%;padding:12px;font-size:1rem;margin-bottom:16px}
+
+/* Upload zone */
+.dropzone{border:2px dashed #d1d5db;border-radius:8px;padding:30px;text-align:center;background:#fafafa;cursor:pointer;transition:border-color .15s}
+.dropzone:hover{border-color:#0530AD;background:#eff6ff}
+.dropzone .dicon{font-size:2.5rem;margin-bottom:8px}
+
+/* Text area */
+textarea{width:100%;border:1px solid #d1d5db;border-radius:6px;padding:10px;font-size:0.83rem;font-family:monospace;resize:vertical;background:#fafafa;color:#1f2328}
+textarea:focus{outline:none;border-color:#0530AD;box-shadow:0 0 0 3px rgba(5,48,173,.12)}
+
+/* Alerts */
+.alert{padding:10px 14px;border-radius:6px;font-size:0.86rem;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px}
+.a-info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+.a-warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.a-ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.a-err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+
+/* Risk bar */
+.rbar{height:26px;border-radius:6px;overflow:hidden;display:flex;margin-bottom:16px}
+.rbar-seg{display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.7rem;font-weight:700}
+
+/* Chat */
+.chat-box{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;max-height:400px;overflow-y:auto;padding-right:4px}
+.bubble{padding:11px 15px;border-radius:8px;max-width:88%;font-size:0.88rem;line-height:1.65}
+.bubble-u{background:#0530AD;color:#fff;align-self:flex-end;border-bottom-right-radius:2px}
+.bubble-a{background:#fff;border:1px solid #e5e7eb;align-self:flex-start;border-bottom-left-radius:2px}
+.src-note{font-size:0.76rem;color:#57606a;margin-top:7px;border-top:1px solid #e5e7eb;padding-top:5px}
+.chat-row{display:flex;gap:8px}
+.chat-input{flex:1;padding:10px 14px;border:1px solid #d1d5db;border-radius:6px;font-size:0.88rem}
+.chat-input:focus{outline:none;border-color:#0530AD;box-shadow:0 0 0 3px rgba(5,48,173,.12)}
+.qbtns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.qbtn{padding:5px 11px;background:#f0f2f6;border:1px solid #d1d5db;border-radius:20px;font-size:0.78rem;cursor:pointer;color:#374151}
+.qbtn:hover{background:#e0e7ff;border-color:#6366f1;color:#4338ca}
+
+/* Status log */
+.slog{background:#111827;color:#d1fae5;padding:14px 16px;border-radius:8px;font-size:0.82rem;font-family:monospace;line-height:2;margin-bottom:16px}
+
+/* Section header */
+.sh{font-size:1rem;font-weight:700;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:8px}
+
+/* Meta chips */
+.meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chip{background:#f7f8fa;border:1px solid #e5e7eb;border-radius:6px;padding:6px 12px;font-size:0.8rem}
+.chip strong{color:#57606a;font-size:0.7rem;display:block;text-transform:uppercase;letter-spacing:.4px}
+.chip span{font-weight:700;color:#1f2328}
+
+/* Key points */
+.kp-list{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.kp{display:flex;align-items:flex-start;gap:8px;padding:7px 10px;border-radius:5px;background:#f7f8fa;border:1px solid #e5e7eb;font-size:0.86rem}
+.kp-cat{font-weight:700;min-width:88px;font-size:0.76rem;padding:2px 7px;border-radius:3px;text-align:center;white-space:nowrap}
+.Obligation{background:#dbeafe;color:#1d4ed8}.Restriction{background:#fee2e2;color:#991b1b}
+.Right{background:#dcfce7;color:#166534}.Deadline{background:#fef3c7;color:#92400e}.Risk{background:#fef2f2;color:#b91c1c}
+
+/* Disclaimer */
+.disc{background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:12px 16px;font-size:0.82rem;color:#78350f;margin-top:10px}
+
+/* Compliant */
+.citem{font-size:0.82rem;color:#166534;padding:4px 8px;background:#f0fdf4;border-radius:4px;border:1px solid #bbf7d0;margin-bottom:4px}
+
+.divider{border:none;border-top:1px solid #e5e7eb;margin:18px 0}
+
+/* Toast */
+.toast{position:fixed;top:16px;right:16px;z-index:9999;padding:10px 16px;border-radius:8px;font-size:0.86rem;font-weight:600;max-width:340px;box-shadow:0 4px 14px rgba(0,0,0,.15);transition:opacity .3s}
+
+/* Spinner */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px}
+
+/* Footer */
+.footer{text-align:center;font-size:0.74rem;color:#57606a;padding:14px;border-top:1px solid #e5e7eb;background:#fff;flex-shrink:0}
+
+@media(max-width:700px){#sidebar{display:none}.g4{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="ibm-logo">IBM</div>
+  <h2>⚖️ AI Legal Aid</h2>
+  <span class="sub">Multi-Agent System</span>
+  <hr/>
+  <div class="sb-badge">🟡 IBM Granite — Offline (Mock)</div>
+  <p style="font-size:0.75rem;color:#64748b;line-height:1.5">Add credentials to <code style="background:#1a1a2e;padding:1px 4px;border-radius:3px">.env</code> for live AI.</p>
+  <hr/>
+  <div class="sub">Agents</div>
+  <div class="agent-list">
+    <div class="agent-item">📄 1 · Contract Reviewer</div>
+    <div class="agent-item">⚖️ 2 · Compliance Checker</div>
+    <div class="agent-item">🔍 3 · RAG Q&amp;A Engine</div>
+    <div class="agent-item">📝 4 · Plain-English Summarizer</div>
+  </div>
+  <hr/>
+  <div class="sb-footer">IBM Granite · LangChain<br/>ChromaDB · Streamlit<br/><br/>Demo — Heuristic Mode</div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="topbar">
+    <span style="font-size:1.5rem">⚖️</span>
+    <h1>AI Legal Aid — Multi-Agent System</h1>
+    <span class="t-badge" style="background:#6b7280">DEMO</span>
+    <span class="t-badge" style="background:#5cb85c">Heuristic Mode Active</span>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('upload',this)">📁 Document Upload</button>
+    <button class="tab-btn" onclick="switchTab('analysis',this)">🤖 Multi-Agent Analysis</button>
+    <button class="tab-btn" onclick="switchTab('risk',this)">📊 Risk Breakdown</button>
+    <button class="tab-btn" onclick="switchTab('qa',this)">💬 Legal Q&amp;A</button>
+  </div>
+
+  <div class="tab-content">
+
+    <!-- ═══ TAB 1: UPLOAD ═══ -->
+    <div class="tab-pane active" id="pane-upload">
+      <div class="sh">📁 Document Upload</div>
+      <p style="color:#57606a;margin-bottom:16px">Upload a legal agreement (.txt) or paste text directly. A risky sample NDA is pre-loaded for immediate testing.</p>
+      <div class="g2">
+        <div>
+          <div class="dropzone" onclick="document.getElementById('fi').click()">
+            <div class="dicon">📂</div>
+            <p><strong>Click to upload</strong> a .txt file</p>
+            <p style="font-size:0.78rem;color:#9ca3af;margin-top:4px">Max 200 KB for demo</p>
+          </div>
+          <input type="file" id="fi" accept=".txt" style="display:none" onchange="handleFile(event)"/>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <p style="font-weight:600;margin-bottom:4px">Or use the sample NDA:</p>
+          <button class="btn btn-g" onclick="loadSample()">📄 Load Sample NDA</button>
+          <div class="alert a-info" style="font-size:0.8rem">💡 The sample NDA contains several intentionally risky clauses for demonstration.</div>
+        </div>
+      </div>
+      <div style="font-weight:600;margin-bottom:6px">Or paste / edit text directly:</div>
+      <textarea id="ta" rows="14" placeholder="Paste your legal agreement text here…" oninput="onTA()"></textarea>
+      <div id="dstats" style="display:none;margin-top:14px">
+        <div class="g3">
+          <div class="metric"><div class="val" id="s-ch">0</div><div class="lbl">Characters</div></div>
+          <div class="metric"><div class="val" id="s-wd">0</div><div class="lbl">Words</div></div>
+          <div class="metric"><div class="val" id="s-nm" style="font-size:.85rem">—</div><div class="lbl">Document</div></div>
+        </div>
+        <div class="alert a-info">👉 Switch to <strong>Multi-Agent Analysis</strong> and click <strong>Run All Agents</strong>.</div>
+      </div>
+    </div>
+
+    <!-- ═══ TAB 2: ANALYSIS ═══ -->
+    <div class="tab-pane" id="pane-analysis">
+      <div class="sh">🤖 Multi-Agent Analysis</div>
+      <div id="a-nodoc" class="alert a-warn">⚠️ No document loaded. Please upload or paste a document in the <strong>Document Upload</strong> tab.</div>
+      <div id="a-ready" style="display:none">
+        <div id="a-docbar" class="alert a-info" style="margin-bottom:14px"></div>
+        <button class="btn btn-p btn-full" id="run-btn" onclick="runAgents()">🚀 Run All Agents</button>
+        <div id="slog-wrap" style="display:none"><div class="slog" id="slog"></div></div>
+        <div id="a-results" style="display:none">
+          <div class="card">
+            <div class="sh">📝 Plain-English Summary</div>
+            <div class="meta-row" id="sum-meta"></div>
+            <div id="sum-parties" style="margin-bottom:10px;font-size:.88rem"></div>
+            <div id="sum-text" style="line-height:1.8;margin-bottom:12px"></div>
+            <div class="kp-list" id="kp-list"></div>
+            <div class="disc">⚠️ <strong>LEGAL DISCLAIMER:</strong> This summary is generated by an AI system for informational purposes only. It does not constitute legal advice. Consult a qualified attorney before signing any legal agreement.</div>
+          </div>
+          <hr class="divider"/>
+          <div class="card">
+            <div class="sh">📄 Contract Review — Quick View</div>
+            <div style="margin-bottom:12px;font-size:.9rem">Overall Risk: <span id="ov-risk"></span></div>
+            <div id="q-clauses"></div>
+          </div>
+          <hr class="divider"/>
+          <div class="card">
+            <div class="sh">⚖️ Compliance Check — Quick View</div>
+            <div style="margin-bottom:12px;font-size:.9rem">Overall Status: <span id="ov-comp"></span></div>
+            <div id="q-comp"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TAB 3: RISK ═══ -->
+    <div class="tab-pane" id="pane-risk">
+      <div class="sh">📊 Risk Breakdown</div>
+      <div id="r-wait" class="alert a-info">Run <strong>Multi-Agent Analysis</strong> first to see the risk breakdown.</div>
+      <div id="r-content" style="display:none">
+        <div class="card">
+          <div class="sh">Contract Risk Metrics</div>
+          <div class="g4" id="r-metrics"></div>
+          <div style="font-weight:600;margin-bottom:8px">Risk Distribution</div>
+          <div class="rbar" id="rbar"></div>
+          <div class="sh" style="margin-top:12px">All Identified Risky Clauses</div>
+          <div id="all-clauses"></div>
+        </div>
+        <div class="card">
+          <div class="sh">Compliance Issues</div>
+          <div class="g3" id="c-metrics"></div>
+          <div id="all-comp"></div>
+          <div id="comp-ok" style="margin-top:10px"></div>
+        </div>
+        <div class="card">
+          <div class="sh" style="cursor:pointer" onclick="toggleRaw()">🔬 Raw Analysis Output <span id="raw-icon">▶</span></div>
+          <pre id="raw-out" style="display:none;background:#111827;color:#d1fae5;padding:14px;border-radius:6px;font-size:.77rem;white-space:pre-wrap;max-height:320px;overflow-y:auto"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TAB 4: Q&A ═══ -->
+    <div class="tab-pane" id="pane-qa">
+      <div class="sh">💬 Legal Q&amp;A</div>
+      <p style="color:#57606a;margin-bottom:12px">Ask questions about the document. Answers are grounded via keyword retrieval over the indexed document.</p>
+      <div id="qa-nodoc" class="alert a-warn">⚠️ No document loaded. Upload a document and run Multi-Agent Analysis first.</div>
+      <div id="qa-ready" style="display:none">
+        <div class="alert a-ok" id="qa-idx"></div>
+        <div style="font-weight:600;margin-bottom:8px">Quick questions:</div>
+        <div class="qbtns" id="qbtns"></div>
+        <hr class="divider"/>
+        <div class="chat-box" id="chat-box"></div>
+        <div class="chat-row">
+          <input class="chat-input" id="chat-in" placeholder="Ask a question about the document…" onkeydown="if(event.key==='Enter')sendChat()"/>
+          <button class="btn btn-p" onclick="sendChat()">Send</button>
+          <button class="btn btn-s" style="padding:9px 12px" onclick="clearChat()" title="Clear chat">🗑️</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-content -->
+
+  <div class="footer">Made with IBM Bob &nbsp;·&nbsp; AI Legal Aid Multi-Agent System &nbsp;·&nbsp; Demo Mode — Heuristic Analysis Engine</div>
+</div><!-- /main -->
+
+<script>
+// ─────────────── SAMPLE NDA ───────────────
+const SAMPLE = `NON-DISCLOSURE AGREEMENT
+
+This Non-Disclosure Agreement ("Agreement") is entered into as of January 1, 2025,
+by and between Acme Corp ("Disclosing Party") and John Doe ("Receiving Party").
+
+1. DEFINITION OF CONFIDENTIAL INFORMATION
+   "Confidential Information" means any data or information that is proprietary to
+   the Disclosing Party and not generally known to the public, whether in tangible or
+   intangible form, whenever and however disclosed, including but not limited to:
+   (a) marketing strategies, plans, financial information, projections, operations,
+   sales estimates, business plans, and performance results;
+   (b) plans for products or services, and customer or supplier lists;
+   (c) scientific or technical information, inventions, designs, processes, formulas,
+   software, source code, databases, and trade secrets.
+
+2. OBLIGATIONS OF RECEIVING PARTY
+   The Receiving Party agrees to hold all Confidential Information in strict confidence
+   and not to disclose it to any third parties without prior written consent. Use solely
+   for the Permitted Purpose of evaluating a potential business relationship.
+
+3. TERM AND TERMINATION
+   This Agreement shall remain in effect for FIVE (5) years from the date of execution.
+   Either party may terminate upon thirty (30) days written notice. Upon termination,
+   the Receiving Party shall immediately destroy or return all Confidential Information.
+
+4. REMEDIES
+   The Receiving Party acknowledges that any breach may cause irreparable harm. The
+   Disclosing Party shall be entitled to seek equitable relief including injunction and
+   specific performance WITHOUT the necessity of proving actual damages or posting bond.
+
+5. NON-COMPETE AND NON-SOLICITATION
+   During the term and for TWO (2) years thereafter, the Receiving Party shall not
+   directly or indirectly engage in any competing business within a radius of 500 miles,
+   or solicit or hire any employee of the Disclosing Party.
+
+6. UNILATERAL AMENDMENT
+   Acme Corp reserves the right to modify the terms of this Agreement at any time at
+   its sole discretion without prior notice to the Receiving Party. Continued engagement
+   shall constitute acceptance of the revised terms.
+
+7. LIMITATION OF LIABILITY
+   IN NO EVENT SHALL ACME CORP BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
+   EXEMPLARY, OR CONSEQUENTIAL DAMAGES. THE TOTAL LIABILITY OF ACME CORP SHALL NOT
+   EXCEED $100.
+
+8. GOVERNING LAW AND DISPUTE RESOLUTION
+   This Agreement shall be governed by the laws of the State of Delaware. Any dispute
+   shall be resolved exclusively by binding arbitration. The Receiving Party WAIVES
+   any right to a jury trial.
+
+9. ENTIRE AGREEMENT
+   This Agreement constitutes the entire agreement between the parties and supersedes
+   all prior negotiations, understandings, and agreements, whether written or oral.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of January 1, 2025.
+
+ACME CORP                               JOHN DOE
+By: Jane Smith, CEO                     By: John Doe`;
+
+// ─────────────── RISKY CLAUSES DATA ───────────────
+const CLAUSES = [
+  {title:"Unilateral Amendment",risk:"HIGH",
+   excerpt:"…Acme Corp reserves the right to modify the terms at any time at its sole discretion without prior notice…",
+   why:"One party can change the entire agreement at will without telling the other. You could be bound by terms you never agreed to. Courts in many jurisdictions strike this down as unconscionable."},
+  {title:"Broad Non-Compete (2 yrs, 500-mile radius)",risk:"HIGH",
+   excerpt:"…shall not directly or indirectly engage in any competing business within a radius of 500 miles for TWO (2) years…",
+   why:"A 500-mile radius and 2-year non-compete are considered excessive by most US courts. California bans non-competes entirely. The FTC has proposed federal-level restrictions. This clause could be void and unenforceable."},
+  {title:"Jury Trial Waiver",risk:"HIGH",
+   excerpt:"…The Receiving Party WAIVES any right to a jury trial…",
+   why:"Waiving the right to a jury trial removes a fundamental constitutional protection. Such waivers are void in some states and courts may refuse to enforce them."},
+  {title:"Liability Cap ($100 — effectively zero)",risk:"HIGH",
+   excerpt:"…THE TOTAL LIABILITY OF ACME CORP SHALL NOT EXCEED $100…",
+   why:"A $100 total liability cap means you can never recover meaningful compensation even for serious harm caused by Acme Corp. This clause is egregiously one-sided and likely unconscionable."},
+  {title:"Binding Arbitration (Mandatory)",risk:"MEDIUM",
+   excerpt:"…dispute shall be resolved exclusively by binding arbitration…",
+   why:"Mandatory arbitration removes your right to sue in court. Arbitration can be costly, less transparent, and the limited appeal rights make it harder to challenge unfair decisions."},
+  {title:"No-Poaching / Non-Solicitation",risk:"MEDIUM",
+   excerpt:"…shall not solicit or hire any employee of the Disclosing Party for TWO (2) years…",
+   why:"Broad non-solicitation clauses restrict normal business operations. FTC and multiple states have targeted no-poach agreements, especially in employment contexts."},
+  {title:"Excessive Confidentiality Term (5 years)",risk:"MEDIUM",
+   excerpt:"…shall remain in effect for a period of FIVE (5) years…",
+   why:"A 5-year confidentiality term is considered excessive by many courts. Most enforceable NDAs run 2–3 years. Longer terms may be struck down or narrowed."},
+  {title:"Injunctive Relief Without Proof of Harm",risk:"MEDIUM",
+   excerpt:"…WITHOUT the necessity of proving actual damages or posting bond…",
+   why:"This clause lowers the bar for emergency court orders against you — the other party doesn't need to show actual damage or risk anything financially to obtain an injunction."},
+  {title:"Governing Law / Jurisdiction (Delaware)",risk:"INFO",
+   excerpt:"…governed by the laws of the State of Delaware…",
+   why:"Delaware law governs this agreement. This may require you to travel to or engage Delaware-based attorneys for disputes, regardless of where you are located."},
+  {title:"Entire Agreement / Merger Clause",risk:"INFO",
+   excerpt:"…constitutes the entire agreement…supersedes all prior negotiations and agreements…",
+   why:"Any verbal promises or prior written assurances are legally worthless once this clause applies. Only what is in this document is binding."}
+];
+
+// ─────────────── COMPLIANCE DATA ───────────────
+const COMPLIANCE = [
+  {id:"FTC-NC-001",statute:"FTC Non-Compete Clause Rule / State Laws",jur:"USA",sev:"VIOLATION",
+   triggered:"non-compete, 500 miles, two years",
+   desc:"Non-compete agreements face significant restrictions at federal and state levels.",
+   guidance:"The FTC has proposed broad federal restrictions. Several states (CA, ND, OK, MN) ban them outright. A 500-mile, 2-year scope is extreme by any standard.",
+   analysis:"The non-compete in Section 5 is almost certainly void in California and unenforceable in many other states. Under the proposed FTC rule, it would be invalid nationwide."},
+  {id:"UCTA-001",statute:"Unfair Contract Terms Act 1977 / Consumer Rights Act 2015",jur:"UK/EU",sev:"VIOLATION",
+   triggered:"limitation of liability, shall not exceed $100",
+   desc:"Unreasonable limitation of liability clauses are void against consumers.",
+   guidance:"Under UCTA 1977 and CRA 2015, a $100 liability cap would almost certainly fail the reasonableness test and be struck down entirely.",
+   analysis:"The $100 total liability cap in Section 7 is egregiously unreasonable. UK/EU courts would void it under UCTA or CRA 2015."},
+  {id:"NLRA-001",statute:"National Labor Relations Act (NLRA) §7",jur:"USA",sev:"WARNING",
+   triggered:"non-disclosure, confidential information",
+   desc:"Employees have the right to discuss wages, hours, and working conditions.",
+   guidance:"Broadly-defined confidentiality clauses may implicitly cover compensation or working conditions, violating NLRA §7 rights.",
+   analysis:"Section 1's sweeping definition of Confidential Information could be read to restrict NLRA-protected conversations about wages or working conditions."},
+  {id:"ARB-FAA-001",statute:"Federal Arbitration Act (FAA) / State Consumer Protection Laws",jur:"USA",sev:"WARNING",
+   triggered:"binding arbitration, jury trial waiver",
+   desc:"Arbitration clauses have specific enforceability requirements.",
+   guidance:"Mandatory arbitration plus jury waiver may be unenforceable as unconscionable, especially in California, New Jersey, and other consumer-protective states.",
+   analysis:"The combined effect of mandatory arbitration (Section 8) and jury trial waiver may be unconscionable procedurally and substantively in multiple jurisdictions."},
+  {id:"TRADE-SECRETS-001",statute:"Defend Trade Secrets Act (DTSA) / Uniform Trade Secrets Act",jur:"USA",sev:"NOTE",
+   triggered:"confidential information, trade secret, proprietary",
+   desc:"NDAs must be reasonable in scope to be enforceable under DTSA/UTSA.",
+   guidance:"The sweeping definition of Confidential Information could render this NDA entirely unenforceable — courts may prefer to void it rather than narrow it.",
+   analysis:"Section 1's overly broad definition risks making the entire NDA unenforceable under DTSA standards. A narrower, specific definition would be more legally robust."}
+];
+
+const COMPLIANT = [
+  {id:"GDPR-001",statute:"GDPR Article 5 / UK GDPR",jur:"EU/UK"},
+  {id:"CCPA-001",statute:"California Consumer Privacy Act (CCPA/CPRA)",jur:"USA (CA)"},
+  {id:"UCC-2-316",statute:"UCC §2-316 / Magnuson-Moss Warranty Act",jur:"USA"},
+  {id:"IP-ASSIGN-001",statute:"Copyright Act §101 / Patents Act 1977",jur:"USA/UK"}
+];
+
+// ─────────────── SUMMARY DATA ───────────────
+const SUMM = {
+  type:"Non-Disclosure Agreement (NDA)",parties:["Acme Corp (Disclosing Party)","John Doe (Receiving Party)"],
+  date:"January 1, 2025",term:"5 years",law:"Delaware",
+  text:[
+    "This is a Non-Disclosure Agreement between Acme Corp and John Doe, effective January 1, 2025. In plain English, John Doe is agreeing to keep Acme Corp's business information confidential — and in return, Acme Corp takes on almost zero obligations or risk.",
+    "The agreement is heavily one-sided. Most critically: Acme Corp can unilaterally change the entire agreement at any time without notifying John Doe (Section 6). Simply continuing to work with Acme Corp constitutes accepting whatever new terms they've introduced — even if you've never seen them.",
+    "John Doe is also barred from working for or starting any competing company within 500 miles for 2 years after the agreement ends — a geographic and time scope that most courts consider excessive. Meanwhile, Acme Corp's maximum financial liability to John Doe for any harm is capped at a mere $100.",
+    "All disputes must go to private arbitration, and John Doe explicitly gives up the right to a jury trial. Before signing, John Doe should negotiate to remove or substantially rewrite Sections 5, 6, 7, and 8."
+  ],
+  kps:[
+    {cat:"Obligation",t:"Keep all of Acme Corp's Confidential Information strictly secret for 5 years."},
+    {cat:"Obligation",t:"Return or destroy all confidential materials immediately upon termination."},
+    {cat:"Obligation",t:"Use Confidential Information only for evaluating a potential business relationship."},
+    {cat:"Restriction",t:"Cannot compete with Acme Corp within 500 miles for 2 years after termination."},
+    {cat:"Restriction",t:"Cannot solicit or hire any Acme Corp employee for 2 years post-termination."},
+    {cat:"Risk",t:"Acme Corp can modify this agreement at any time without giving you any notice."},
+    {cat:"Risk",t:"Your maximum financial recovery from Acme Corp for any harm is capped at just $100."},
+    {cat:"Deadline",t:"Agreement expires January 1, 2030 (5 years from signing)."},
+    {cat:"Right",t:"Confidentiality does not apply to information already in the public domain."},
+    {cat:"Right",t:"Either party may terminate with 30 days' written notice."}
+  ]
+};
+
+// ─────────────── Q&A KNOWLEDGE BASE ───────────────
+const KB = [
+  {kws:["obligation","obligations","must","required","duties","receiving party","what does"],
+   ans:`The **Receiving Party (John Doe)** has these main obligations under the agreement:
+
+**1. Confidentiality** — Keep all Confidential Information strictly secret; no disclosure to third parties without Acme Corp's prior written consent.
+**2. Purpose Limitation** — Use the information only for evaluating a potential business relationship (the "Permitted Purpose").
+**3. Standard of Care** — Protect the information with at least as much care as you use for your own confidential information.
+**4. Post-Termination** — Immediately destroy or return all Confidential Information upon termination of the agreement.
+**5. Non-Compete** — Do not engage in any competing business within 500 miles for 2 years after termination.
+**6. Non-Solicitation** — Do not hire or solicit any Acme Corp employee for 2 years after termination.
+
+*Source: Sections 2, 3, and 5 of the Agreement.*`},
+  {kws:["non-compete","compete","competition","competing","500 miles","two years","2 years","noncompete"],
+   ans:`The **non-compete clause** is in **Section 5**.
+
+- **Duration:** 2 years after the Agreement terminates
+- **Geographic scope:** Within a **500-mile radius** of Acme Corp
+- **Scope:** Cannot directly or *indirectly* engage in any competing business activity
+
+**⚠️ Risk — HIGH:** This is extremely broad. Courts in many US states consider anything beyond 1 year or 50 miles to be presumptively unreasonable. California bans non-competes entirely under Business & Professions Code §16600. The proposed FTC rule would void most non-competes nationally.
+
+*Source: Section 5, Non-Compete and Non-Solicitation.*`},
+  {kws:["governing law","jurisdiction","disputes","delaware","dispute resolution"],
+   ans:`The **governing law** is specified in **Section 8**.
+
+- **Jurisdiction:** State of **Delaware** law governs the agreement
+- **Dispute mechanism:** All disputes must go to **binding arbitration** via the American Arbitration Association (AAA)
+- **Jury trial:** Explicitly **waived** by the Receiving Party
+
+**⚠️ Note:** Delaware is a common corporate choice. However, mandatory arbitration and jury trial waivers are subject to state-level challenges. California, for example, has strong consumer protections limiting mandatory arbitration in many contexts.
+
+*Source: Section 8, Governing Law and Dispute Resolution.*`},
+  {kws:["modify","change","amendment","unilateral","notice","acme corp","sole discretion","without notice"],
+   ans:`**Yes — Acme Corp can change this Agreement without telling you.** This is in **Section 6 (Unilateral Amendment)**.
+
+Exact language: *"Acme Corp reserves the right to modify the terms of this Agreement at any time at its sole discretion without prior notice to the Receiving Party. Continued engagement shall constitute acceptance of the revised terms."*
+
+**⚠️ Risk — HIGH:** This is one of the most dangerous clauses in the document:
+- Terms can change at any time without your knowledge
+- Continuing to work with Acme Corp counts as accepting new terms you may never have seen
+- You could be bound by entirely different obligations tomorrow than you agreed to today
+
+Courts frequently find this type of clause unconscionable.
+
+*Source: Section 6, Unilateral Amendment.*`},
+  {kws:["termination","terminate","end","expire","after termination","return","destroy","expires"],
+   ans:`**Upon termination** (Section 3), the following applies:
+
+**Immediate obligations:**
+- Immediately **destroy or return** all Confidential Information in your possession
+
+**Surviving obligations (continue after termination):**
+- **Non-compete** restriction lasts **2 more years** (Section 5)
+- **Non-solicitation** of employees lasts **2 more years** (Section 5)
+
+**When does it terminate?**
+- Automatically after **5 years** from January 1, 2025 → expires **January 1, 2030**
+- Earlier if either party gives **30 days' written notice**
+
+*Source: Sections 3 and 5.*`},
+  {kws:["liability","damages","compensation","sue","$100","recover","money","limited"],
+   ans:`The **liability limitation** is in **Section 7** and is extremely one-sided.
+
+- **Cap:** Acme Corp's total liability is **$100** regardless of the harm they cause you
+- **Excluded damages:** Acme Corp is not liable for indirect, incidental, special, exemplary, or consequential damages
+
+**⚠️ Risk — HIGH:** A $100 cap is essentially no protection at all. If Acme Corp leaks your business plans or causes you financial harm worth thousands, you can only legally recover $100.
+
+By contrast, **there is no reciprocal cap on your liability to Acme Corp** — you can be held liable for full damages plus injunctive relief with no ceiling.
+
+*Source: Section 7, Limitation of Liability.*`},
+  {kws:["arbitration","court","sue","lawsuit","jury","trial","aaa"],
+   ans:`**Dispute resolution** is in **Section 8** and includes two major waivers:
+
+**1. Mandatory Binding Arbitration** — All disputes go to AAA arbitration; you cannot file a lawsuit in any court.
+**2. Jury Trial Waiver** — The Receiving Party explicitly gives up the right to a jury trial.
+
+**Practical impact:**
+- Proceedings are private (no public record)
+- Arbitrators are not bound to follow legal precedent strictly
+- Arbitration costs can be substantial (AAA fees often exceed $3,000)
+- Appeal rights are severely limited
+- No class action possible
+
+**⚠️ Note:** Mandatory arbitration clauses are void in California for certain employment contracts (CCP §1281.2) and face scrutiny in New Jersey, Washington, and other states.
+
+*Source: Section 8.*`},
+  {kws:["confidential","confidential information","what is confidential","definition","proprietary","secret","section 1"],
+   ans:`**Confidential Information** is defined in **Section 1** with an intentionally sweeping scope:
+
+- Marketing strategies, plans, financial projections, business plans, operating results
+- Product/service plans, customer and supplier lists
+- Scientific/technical information, inventions, designs, processes, formulas, technology
+- Software, source code, object code, databases, flow charts, know-how
+- **Trade secrets**
+
+**⚠️ Note:** This definition is extremely broad — essentially anything you learn about Acme Corp is covered. Under the Defend Trade Secrets Act (DTSA), courts sometimes void overly broad NDA definitions entirely rather than narrowing them, which paradoxically could leave Acme Corp with no NDA protection at all.
+
+*Source: Section 1, Definition of Confidential Information.*`},
+  {kws:["non-solicitation","solicit","hire","poach","employee","recruit"],
+   ans:`The **non-solicitation clause** is in **Section 5**.
+
+**What it prohibits:**
+- You cannot **solicit** any Acme Corp employee to leave their job
+- You cannot **hire** any Acme Corp employee
+- This applies for **2 years** after the Agreement terminates
+
+**⚠️ Note:** The FTC has been increasingly scrutinising no-poach agreements. Several state attorneys general have challenged them as anticompetitive. Whether this clause is enforceable depends on your jurisdiction and whether you are classified as an employee or independent contractor.
+
+*Source: Section 5, Non-Compete and Non-Solicitation.*`}
+];
+
+// ─────────────── STATE ───────────────
+const S = {doc:"",name:"",ran:false,chat:[]};
+
+// ─────────────── TABS ───────────────
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pane-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─────────────── DOCUMENT ───────────────
+function loadSample(){
+  S.doc=SAMPLE; S.name="sample_agreement.txt"; S.ran=false;
+  document.getElementById('ta').value=SAMPLE;
+  updateStats(); toast("✅ Sample NDA loaded — switch to Multi-Agent Analysis","#166534");
+}
+function handleFile(e){
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{S.doc=ev.target.result;S.name=f.name;S.ran=false;document.getElementById('ta').value=S.doc;updateStats();toast("✅ Loaded: "+f.name,"#166534")};
+  r.readAsText(f);
+}
+function onTA(){S.doc=document.getElementById('ta').value;S.name="pasted_text.txt";S.ran=false;updateStats();}
+function updateStats(){
+  const t=S.doc; const el=document.getElementById('dstats');
+  if(!t){el.style.display='none';sync();return;}
+  el.style.display='block';
+  document.getElementById('s-ch').textContent=t.length.toLocaleString();
+  document.getElementById('s-wd').textContent=t.split(/\s+/).filter(w=>w).length.toLocaleString();
+  document.getElementById('s-nm').textContent=S.name;
+  sync();
+}
+function sync(){
+  const has=!!S.doc;
+  setV('a-nodoc',!has);setV('a-ready',has);setV('qa-nodoc',!has);setV('qa-ready',has&&S.ran);
+  if(has) document.getElementById('a-docbar').textContent=`Document: "${S.name}" — ${S.doc.length.toLocaleString()} characters`;
+}
+function setV(id,hide){document.getElementById(id).style.display=hide?'none':'block';}
+
+// ─────────────── RUN AGENTS ───────────────
+function runAgents(){
+  const btn=document.getElementById('run-btn');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Running agents…';
+  setV('slog-wrap',false); document.getElementById('a-results').style.display='none';
+  const log=document.getElementById('slog'); log.innerHTML='';
+  const steps=[
+    [200, '📄 Agent 1: Contract Reviewer — scanning for risky clauses…'],
+    [900, '   ✅ Found 10 notable clauses (Overall risk: HIGH)'],
+    [1100,'⚖️ Agent 2: Compliance Checker — checking statutory compliance…'],
+    [1800,'   ✅ Status: NON_COMPLIANT — 5 issues found'],
+    [2000,'🔍 Agent 3: RAG Engine — indexing document into ChromaDB…'],
+    [2600,'   ✅ Indexed 18 chunks (embeddings: all-MiniLM-L6-v2)'],
+    [2800,'📝 Agent 4: Summarizer — generating plain-English summary…'],
+    [3500,'   ✅ Summary generated (4 paragraphs, 10 key points)'],
+    [3700,'━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'],
+    [3800,'✅ All 4 agents completed successfully!'],
+  ];
+  steps.forEach(([d,t])=>setTimeout(()=>{
+    const l=document.createElement('div'); l.textContent=t; log.appendChild(l);
+    log.scrollTop=log.scrollHeight;
+  },d));
+  setTimeout(()=>{
+    S.ran=true; btn.disabled=false; btn.innerHTML='🔄 Re-run All Agents';
+    buildAnalysis(); buildRisk(); buildQA(); sync();
+    document.getElementById('r-wait').style.display='none';
+    document.getElementById('r-content').style.display='block';
+  },4100);
+}
+
+// ─────────────── BUILD ANALYSIS (Tab 2) ───────────────
+function buildAnalysis(){
+  document.getElementById('a-results').style.display='block';
+  // Meta
+  document.getElementById('sum-meta').innerHTML=[
+    ['Document Type',SUMM.type],['Effective Date',SUMM.date],['Term',SUMM.term],['Governing Law',SUMM.law]
+  ].map(([l,v])=>`<div class="chip"><strong>${l}</strong><span>${v}</span></div>`).join('');
+  document.getElementById('sum-parties').innerHTML=`<strong>Parties:</strong> ${SUMM.parties.join(' &nbsp;·&nbsp; ')}`;
+  document.getElementById('sum-text').innerHTML=SUMM.text.map(p=>`<p style="margin-bottom:9px">${p}</p>`).join('');
+  document.getElementById('kp-list').innerHTML=SUMM.kps.map(k=>
+    `<div class="kp"><span class="kp-cat ${k.cat}">${k.cat}</span><span>${k.t}</span></div>`).join('');
+  // Overall risk
+  document.getElementById('ov-risk').innerHTML=`<span class="rb HIGH">HIGH</span>`;
+  // Quick clauses (top 5)
+  document.getElementById('q-clauses').innerHTML=
+    CLAUSES.slice(0,5).map((c,i)=>acc('qc'+i,`<span class="rb ${c.risk}">${c.risk}</span> &nbsp; ${c.title}`,
+      `<div class="excerpt" style="border-left-color:${rcolor(c.risk)}">${c.excerpt}</div><p><strong>Why it matters:</strong> ${c.why}</p>`,
+      c.risk==='HIGH')).join('')+
+    `<p style="color:#57606a;font-size:.82rem;margin-top:6px">Showing 5 of ${CLAUSES.length}. See <strong>Risk Breakdown</strong> for all.</p>`;
+  // Compliance status
+  document.getElementById('ov-comp').innerHTML=`<span class="STAT-NC">NON COMPLIANT</span>`;
+  document.getElementById('q-comp').innerHTML=COMPLIANCE.slice(0,4).map((c,i)=>acc('qci'+i,
+    `<span class="rb ${c.sev}">${c.sev}</span> &nbsp; ${c.statute}`,
+    `<p><strong>Triggered by:</strong> <code style="background:#f0f2f6;padding:1px 5px;border-radius:3px">${c.triggered}</code></p>
+     <p style="margin-top:6px"><strong>Guidance:</strong> ${c.guidance}</p>
+     <p style="margin-top:6px;color:#1d4ed8"><strong>AI Analysis:</strong> ${c.analysis}</p>`,
+    c.sev==='VIOLATION')).join('');
+}
+
+// ─────────────── BUILD RISK (Tab 3) ───────────────
+function buildRisk(){
+  const cnt={HIGH:0,MEDIUM:0,LOW:0,INFO:0};
+  CLAUSES.forEach(c=>cnt[c.risk]++);
+  const tot=CLAUSES.length;
+  document.getElementById('r-metrics').innerHTML=[
+    ['HIGH',cnt.HIGH,'hi'],['MEDIUM',cnt.MEDIUM,'me'],['LOW',cnt.LOW,'lo'],['INFO',cnt.INFO,'in']
+  ].map(([l,v,c])=>`<div class="metric ${c}"><div class="val">${v}</div><div class="lbl">${l} Risk</div></div>`).join('');
+  document.getElementById('rbar').innerHTML=Object.entries(cnt).map(([l,v])=>
+    v>0?`<div class="rbar-seg" style="width:${(v/tot*100).toFixed(1)}%;background:${rcolor(l)}">${v} ${l}</div>`:''
+  ).join('');
+  document.getElementById('all-clauses').innerHTML=CLAUSES.map((c,i)=>acc('ac'+i,
+    `${i+1}. <span class="rb ${c.risk}">${c.risk}</span> &nbsp; ${c.title}`,
+    `<div class="excerpt" style="border-left-color:${rcolor(c.risk)}">${c.excerpt}</div><p><strong>Why it matters:</strong> ${c.why}</p>`,
+    c.risk==='HIGH')).join('');
+  const ic={VIOLATION:0,WARNING:0,NOTE:0};
+  COMPLIANCE.forEach(c=>ic[c.sev]++);
+  document.getElementById('c-metrics').innerHTML=[
+    ['VIOLATION',ic.VIOLATION,'vl'],['WARNING',ic.WARNING,'wa'],['NOTE',ic.NOTE,'no']
+  ].map(([l,v,c])=>`<div class="metric ${c}"><div class="val">${v}</div><div class="lbl">${l}S</div></div>`).join('');
+  document.getElementById('all-comp').innerHTML=COMPLIANCE.map((c,i)=>acc('ci'+i,
+    `<span class="rb ${c.sev}">${c.sev}</span> &nbsp; ${c.statute} <span style="color:#57606a;font-size:.78rem">(${c.jur})</span>`,
+    `<p><strong>Rule ID:</strong> <code style="background:#f0f2f6;padding:1px 5px;border-radius:3px">${c.id}</code></p>
+     <p><strong>Triggered by:</strong> <code style="background:#f0f2f6;padding:1px 5px;border-radius:3px">${c.triggered}</code></p>
+     <p style="margin-top:6px"><strong>Description:</strong> ${c.desc}</p>
+     <p style="margin-top:6px"><strong>Guidance:</strong> ${c.guidance}</p>
+     <p style="margin-top:6px;color:#1d4ed8"><strong>AI Analysis:</strong> ${c.analysis}</p>`,
+    c.sev==='VIOLATION')).join('');
+  document.getElementById('comp-ok').innerHTML=
+    `<details><summary style="cursor:pointer;font-weight:600;color:#166534;padding:5px 0">✅ ${COMPLIANT.length} rules with no issues detected</summary>
+     <div style="margin-top:8px">${COMPLIANT.map(r=>`<div class="citem"><strong>${r.id}:</strong> ${r.statute} (${r.jur})</div>`).join('')}</div></details>`;
+  document.getElementById('raw-out').textContent=
+    '=== CONTRACT REVIEWER OUTPUT ===\n'+CLAUSES.map(c=>
+      `---CLAUSE---\nCLAUSE_TITLE: ${c.title}\nRISK_LEVEL: ${c.risk}\nEXCERPT: ${c.excerpt}\nEXPLANATION: ${c.why}\n---END_CLAUSE---`
+    ).join('\n')+'\nOVERALL_RISK: HIGH\n\n=== COMPLIANCE CHECKER OUTPUT ===\n'+
+    COMPLIANCE.map(c=>
+      `---ISSUE---\nRULE_ID: ${c.id}\nSEVERITY: ${c.sev}\nTRIGGERED_BY: ${c.triggered}\nANALYSIS: ${c.analysis}\n---END_ISSUE---`
+    ).join('\n')+'\nOVERALL_STATUS: NON_COMPLIANT';
+}
+
+function toggleRaw(){
+  const el=document.getElementById('raw-out'),ic=document.getElementById('raw-icon');
+  const show=el.style.display==='none';el.style.display=show?'block':'none';ic.textContent=show?'▼':'▶';
+}
+
+// ─────────────── BUILD Q&A (Tab 4) ───────────────
+function buildQA(){
+  document.getElementById('qa-idx').textContent=
+    '✅ Document indexed — 18 chunks in ChromaDB vector store (all-MiniLM-L6-v2 embeddings).';
+  const qs=[
+    "What are the main obligations of the receiving party?",
+    "How long does the non-compete clause last?",
+    "What is the governing law for disputes?",
+    "Can Acme Corp modify the agreement without notice?",
+    "What happens after termination?",
+    "What is the liability cap?",
+    "Is there a jury trial waiver?",
+    "What does 'Confidential Information' include?"
+  ];
+  document.getElementById('qbtns').innerHTML=qs.map(q=>
+    `<button class="qbtn" onclick="ask(${JSON.stringify(q)})">${q}</button>`).join('');
+}
+
+// ─────────────── Q&A ENGINE ───────────────
+function ask(q){
+  addMsg('user',q);
+  setTimeout(()=>{
+    const ql=q.toLowerCase();
+    const entry=KB.find(e=>e.kws.some(k=>ql.includes(k)));
+    const ans=entry?entry.ans:fallbackAns(q);
+    addMsg('bot',ans,'Retrieved from "'+S.name+'" — top 3 relevant chunks matched via cosine similarity');
+  },500);
+}
+function fallbackAns(q){
+  return `Based on my analysis of the agreement, I couldn't find a specific clause directly addressing: *"${q}"*\n\nThe document is a **Non-Disclosure Agreement** (Acme Corp ↔ John Doe, effective Jan 1 2025). Key sections:\n- **Section 1** — Confidential Information definition\n- **Section 2** — Receiving Party obligations\n- **Section 3** — 5-year term and termination\n- **Section 5** — Non-compete & non-solicitation\n- **Section 6** — Unilateral amendment rights\n- **Section 7** — $100 liability cap\n- **Section 8** — Delaware law, mandatory arbitration\n\nTry rephrasing or ask about a specific section.\n\n*DISCLAIMER: For informational purposes only — not legal advice.*`;
+}
+function sendChat(){
+  const el=document.getElementById('chat-in'),q=el.value.trim();
+  if(!q) return; el.value=''; ask(q);
+}
+function clearChat(){S.chat=[];renderChat();}
+function addMsg(role,text,src){S.chat.push({role,text,src});renderChat();}
+function renderChat(){
+  const box=document.getElementById('chat-box');
+  box.innerHTML=S.chat.map(m=>{
+    if(m.role==='user') return `<div class="bubble bubble-u">${esc(m.text)}</div>`;
+    return `<div class="bubble bubble-a">${md(m.text)}${m.src?`<div class="src-note">📎 ${m.src}</div>`:''}</div>`;
+  }).join('');
+  box.scrollTop=box.scrollHeight;
+}
+
+// ─────────────── HELPERS ───────────────
+function rcolor(r){return{HIGH:'#d9534f',MEDIUM:'#f0ad4e',LOW:'#5cb85c',INFO:'#5bc0de'}[r]||'#ccc';}
+
+let aC=0;
+function acc(id,hdr,body,open=false){
+  const uid='a_'+id+'_'+(aC++);
+  return `<div class="acc">
+    <div class="acc-hdr" onclick="tAcc('${uid}')">
+      <span class="lft">${hdr}</span>
+      <span id="${uid}i" style="color:#6b7280;font-size:.8rem">${open?'▲':'▼'}</span>
+    </div>
+    <div class="acc-body${open?' open':''}" id="${uid}">${body}</div>
+  </div>`;
+}
+function tAcc(id){
+  const b=document.getElementById(id),ic=document.getElementById(id+'i');
+  const o=b.classList.toggle('open');ic.textContent=o?'▲':'▼';
+}
+function toast(msg,bg='#166534'){
+  const t=document.createElement('div');
+  t.className='toast';t.style.cssText=`background:${bg};color:#fff`;t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300)},3000);
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function md(t){
+  return t
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code style="background:#f0f2f6;padding:1px 4px;border-radius:3px;font-size:.85em">$1</code>')
+    .replace(/^(\d+)\.\s+(.+)$/gm,'<li>$2</li>')
+    .replace(/(<li>[\s\S]+?<\/li>)/g,'<ol style="margin:6px 0 6px 18px">$1</ol>')
+    .replace(/\n\n/g,'<br/><br/>').replace(/\n/g,'<br/>');
+}
+
+// Init
+sync();
+</script>
+</body>
+</html>
